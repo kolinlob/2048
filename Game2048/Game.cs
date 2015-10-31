@@ -1,208 +1,203 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Data;
 using System.Linq;
-using System.Security.Policy;
+using System.Collections.Generic;
 
 namespace Game2048
 {
     public class Game
     {
-        private Board _board;
-        private Random _random;
+        private Board beforeChangesBoard;
+        private Board previousTurnBoard;
+        private Board currentTurnBoard;
+        private Random random;
+        private static int currentScore;
+        private static int previousScore;
+
+        public Game()
+        {
+            //TEST CASE #1
+            //var arr = new[,]
+            //{
+            //    {new Tile(2), new Tile(0), new Tile(0), new Tile(2)},
+            //    {new Tile(0), new Tile(0), new Tile(0), new Tile(2)},
+            //    {new Tile(0), new Tile(0), new Tile(0), new Tile(2)},
+            //    {new Tile(0), new Tile(0), new Tile(0), new Tile(2)},
+            //};
+            //currentTurnBoard = new Board(arr);
+
+            random = new Random();
+            currentTurnBoard = new Board();
+
+            currentScore = 0;
+            previousScore = currentScore;
+
+            beforeChangesBoard = new Board(currentTurnBoard);
+            previousTurnBoard = new Board(beforeChangesBoard);
+        }
 
         public void Start()
         {
-            var arr = new[,]
-            {
-                {new Tile(0), new Tile(2), new Tile(4), new Tile(0)},
-                {new Tile(2), new Tile(0), new Tile(2), new Tile(0)},
-                {new Tile(0), new Tile(0), new Tile(2), new Tile(0)},
-                {new Tile(2), new Tile(2), new Tile(0), new Tile(0)},
-            };
+            CreateNewTile();
 
-            _board = new Board(arr);
-            _random = new Random();
+            currentTurnBoard.Display();
+            Console.WriteLine(currentScore);
 
-            while (!IsGameOver())
-            {
-                Turn();
-                Console.Clear();
-            }
+            do { Turn(); }
+            while (!IsGameOver());
         }
 
         private void Turn()
         {
-            //CreateNewTile();
-            for (int i = 0; i < _board.Size; i++)
-                for (int j = 0; j < _board.Size; j++)
-                    _board[i, j].ResetFlag();
+            previousTurnBoard = new Board(currentTurnBoard);
 
-            _board.Display();
-            Console.ReadKey();
-            SumUp();
-        }
-
-        private void CreateNewTile()
-        {
-            var x = _random.Next(0, 4);
-            var y = _random.Next(0, 4);
-
-            while (_board[x, y] != 0)
-            {
-                x = _random.Next(0, 4);
-                y = _random.Next(0, 4);
-            }
-            _board[x, y] = 2 + _random.Next(0, 1) * 2;
-        }
-
-        private void Sum()
-        {
             var key = Console.ReadKey(true).Key;
+
             switch (key)
             {
                 case ConsoleKey.UpArrow: SumUp(); break;
                 case ConsoleKey.DownArrow: SumDown(); break;
                 case ConsoleKey.LeftArrow: SumLeft(); break;
                 case ConsoleKey.RightArrow: SumRight(); break;
+                case ConsoleKey.Backspace: Undo(); break;
             }
+
+            if (currentTurnBoard == previousTurnBoard)
+                return;
+
+            CreateNewTile();
+
+            ClearScreen();
+            currentTurnBoard.Display();
+            Console.WriteLine(currentScore);
         }
 
-        //private void SumUp()
-        //{
-        //    for (var col = 0; col < _board.Size; col++)
-        //        for (var row = 0; row < _board.Size; row++)
-        //            if (_board[row, col] == 0)
-        //                if (row < _board.Size - 1)
-        //                {
-        //                    _board[row, col] = _board[row + 1, col];
-        //                    _board[row + 1, col] = 0;
-        //                }
-        //            
-        //    for (var row = 0; row < _board.Size -1; row++)
-        //        for (var col = 0; col < _board.Size; col++)
-        //            if (row < _board.Size - 1 && _board[row, col] == _board[row + 1, col])
-        //            {
-        //                _board[row, col] *= 2;
-        //                _board[row + 1, col] = 0;
-        //            }
-        //}
+        private static void ClearScreen() { Console.Clear(); }
+
+        private void CreateNewTile()
+        {
+            var x = random.Next(0, 4);
+            var y = random.Next(0, 4);
+
+            while (currentTurnBoard[x, y] != 0)
+            {
+                x = random.Next(0, 4);
+                y = random.Next(0, 4);
+            }
+            currentTurnBoard[x, y] = 2 + random.Next(0, 1) * 2;
+        }
+
+        private void Undo()
+        {
+            currentTurnBoard = new Board(beforeChangesBoard);
+            ClearScreen();
+            currentTurnBoard.Display();
+
+            currentScore = previousScore;
+            Console.WriteLine(currentScore);
+        }
+
+        private void ShiftTiles(List<Tile> list)
+        {
+            beforeChangesBoard = new Board(currentTurnBoard);
+
+            if (list.All(i => i == 0)) return;
+
+            list.RemoveAll(i => i == 0);
+            var emptyTiles = currentTurnBoard.Size - list.Count;
+
+            for (var i = 0; i < emptyTiles; i++)
+                list.Add(new Tile(0));
+
+            previousScore = currentScore;
+            SumTiles(list);
+        }
+
+        private static void SumTiles(List<Tile> tilesList)
+        {
+            for (var i = 0; i < tilesList.Count - 1; i++)
+            {
+                if (tilesList[i] != tilesList[i + 1]) continue;
+
+                tilesList[i] += tilesList[i + 1];
+
+                currentScore += tilesList[i];
+
+                tilesList.RemoveAt(i + 1);
+
+                tilesList.Add(new Tile(0));
+            }
+        }
 
         private void SumUp()
         {
-            for (var col = 0; col < _board.Size; col++)
+            for (var col = 0; col < currentTurnBoard.Size; col++)
             {
-                var list = new List<Tile>();
+                var tilesList = new List<Tile>();
 
-                for (var row = 0; row < _board.Size; row++)
-                    list.Add(_board[row, col]);
+                for (var row = 0; row < currentTurnBoard.Size; row++)
+                    tilesList.Add(currentTurnBoard[row, col]);
 
-                var empty = list.Count(tile => tile == 0);
-                list.RemoveAll(i => i == 0);
-                list.InsertRange(list.IndexOf(list.Last()), new Tile[empty]);
-            }
-        }
-        //for (var col = 0; col < _board.Size; col++)
-        //    for (var row = 0; row < _board.Size - 1; row++)
-        //        if (_board[row, col] == _board[row + 1, col])
-        //        {
-        //            if (_board[row, col].IsChanged) continue;
-        //            _board[row, col].Double();
-        //            _board[row + 1, col].Clear();
-        //        }
+                ShiftTiles(tilesList);
 
-        //for (var row = _board.Size - 1; row > 0; row--)
-        //{
-        //    for (var col = 0; col < _board.Size; col++)
-        //    {
-        //        if (_board[row, col] == 0) continue;
-        //
-        //        if (_board[row - 1, col] == 0)
-        //        {
-        //            _board[row - 1, col] = _board[row, col];
-        //            _board[row, col] = 0;
-        //            continue;
-        //        }
-        //
-        //        if (_board[row, col] == _board[row - 1, col])
-        //        {
-        //            if (_board[row, col].IsChanged) continue;
-        //            _board[row - 1, col].Double();
-        //            _board[row, col] = 0;
-        //        }
-        //    }
-        //    Console.ReadLine();
-        //    Console.Clear();
-        //    _board.Display();
-        //}
-
-
-        private void SwitchRows(int row, int col)
-        {
-            if (row < _board.Size - 1)
-            {
-                var temp = _board[row, col];
-                _board[row, col] = _board[row + 1, col];
-                _board[row + 1, col] = temp;
+                for (var row = 0; row < currentTurnBoard.Size; row++)
+                    currentTurnBoard[row, col] = tilesList[row];
             }
         }
 
         private void SumDown()
         {
-            for (int row = 0; row < _board.Size; row++)
-                for (int col = 0; col < _board.Size; col++)
-                {
-                    if (row < _board.Size - 1)
-                    {
-                        if (_board[row + 1, col] == _board[row, col])
-                        {
-                            _board[row + 1, col] += _board[row, col];
-                            _board[row, col] = 0;
-                        }
-                    }
-                }
+            for (var col = 0; col < currentTurnBoard.Size; col++)
+            {
+                var tilesList = new List<Tile>();
+                for (var row = currentTurnBoard.Size - 1; row >= 0; row--)
+                    tilesList.Add(currentTurnBoard[row, col]);
+
+                ShiftTiles(tilesList);
+                tilesList.Reverse();
+
+                for(var row = 0; row < currentTurnBoard.Size; row++)
+                    currentTurnBoard[row, col] = tilesList[row];
+            }
         }
 
         private void SumLeft()
         {
-            for (int row = _board.Size - 1; row >= 0; row--)
-                for (int col = 0; col < _board.Size; col++)
-                {
-                    if (row > 0)
-                    {
-                        if (_board[row - 1, col] == _board[row, col])
-                        {
-                            _board[row - 1, col] += _board[row, col];
-                            _board[row, col] = 0;
-                        }
-                    }
-                }
+            for (var row = 0; row < currentTurnBoard.Size; row++)
+            {
+                var tilesList = new List<Tile>();
+                for (var col = 0; col < currentTurnBoard.Size; col++)
+                    tilesList.Add(currentTurnBoard[row, col]);
+
+                ShiftTiles(tilesList);
+
+                for (var col = 0; col < currentTurnBoard.Size; col++)
+                    currentTurnBoard[row, col] = tilesList[col];
+            }
         }
 
         private void SumRight()
         {
-            for (int row = _board.Size - 1; row >= 0; row--)
-                for (int col = 0; col < _board.Size; col++)
-                {
-                    if (row > 0)
-                    {
-                        if (_board[row - 1, col] == _board[row, col])
-                        {
-                            _board[row - 1, col] += _board[row, col];
-                            _board[row, col] = 0;
-                        }
-                    }
-                }
+            for (var row = 0; row < currentTurnBoard.Size; row++)
+            {
+                var tilesList = new List<Tile>();
+                for (var col = 0; col < currentTurnBoard.Size; col++)
+                    tilesList.Add(currentTurnBoard[row, col]);
+
+                ShiftTiles(tilesList);
+                tilesList.Reverse();
+
+                for (var col = 0; col < currentTurnBoard.Size; col++)
+                    currentTurnBoard[row, col] = tilesList[col];
+            }
         }
 
         private bool IsGameOver()
         {
-            for (int i = 0; i < _board.Size; i++)
-                for (int j = 0; j < _board.Size; j++)
-                    if (_board[i, j] == 2048)
+            for (var i = 0; i < currentTurnBoard.Size; i++)
+                for (var j = 0; j < currentTurnBoard.Size; j++)
+                    if (currentTurnBoard[i, j] == 2048)
                         return true;
-            return !_board.HasEmptyCells();
+            return !currentTurnBoard.HasEmptyCells();
         }
     }
 }

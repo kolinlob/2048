@@ -1,29 +1,17 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Game2048
 {
-    public class Tile : IEquatable<Tile>
+    public struct Tile : IEquatable<Tile>
     {
         public int Value { get; set; }
-        public void Clear() => Value = 0;
 
-        public bool IsChanged { get; set; }
 
-        public void ResetFlag() => IsChanged = false;
+        public override string ToString() => Value.ToString();
 
-        public void Double()
-        {
-            Value *= 2;
-            IsChanged = true;
-        }
-
-        public override string ToString() => Value + ", " + IsChanged;
-
-        public Tile(int param)
-        {
-            Value = param;
-            IsChanged = false;
-        }
+        public Tile(int param) { Value = param; }
 
         public static bool operator ==(Tile x, int y) { return x.Value == y; }
 

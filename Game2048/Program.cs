@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Game2048
 {
@@ -13,7 +9,8 @@ namespace Game2048
             var game = new Game();
             game.Start();
 
-            Console.WriteLine("End");
+            Console.WriteLine("\r\n" +
+                              "\tEnd");
             Console.ReadLine();
         }
     }

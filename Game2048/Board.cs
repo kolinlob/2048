@@ -1,56 +1,94 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Linq.Expressions;
 
 namespace Game2048
 {
-    public class Board
+    public class Board : IEquatable<Board>
     {
-        private Tile[,] _board;
-        public int Size => _board.GetLength(0);
+        private Tile[,] board;
+        public int Size => board.GetLength(0);
 
         public Tile this[int row, int col]
         {
-            get { return _board[row, col]; }
-            set
-            {
-                _board[row, col].Value = value.Value;
-                _board[row, col].IsChanged = value.IsChanged;    
-            }
+            get { return board[row, col]; }
+            set { board[row, col].Value = value.Value; }
         }
 
         public Board(Tile[,] array)
         {
-            _board = array;
+            board = array;  
+        }
 
-            //new Tile[array.GetLength(0),array.GetLength(1)];
-            //
-            // for (int i = 0; i < _board.GetLength(0); i++)
-            //     for (int j = 0; j < _board.GetLength(1); j++)                
-            //         _board[i, j] = array[i, j];    
+        public Board(Board b)
+        {
+            board = new Tile[b.Size,b.Size];
+            for (var row = 0; row < b.Size; row++)
+                for (var col = 0; col < b.Size; col++)
+                    board[row, col] = b[row, col];
         }
 
         public Board() : this(new Tile[4,4]) { }
 
         public void Display()
         {
-            Console.WriteLine();
-            for (var row = 0; row < _board.GetLength(0); row++)
+            Console.WriteLine("  " + "".PadLeft(5 * Size, '-') + "\r\n");
+            for (var row = 0; row < board.GetLength(0); row++)
             {
-                for (var col = 0; col < _board.GetLength(1); col++)
-                    Console.Write(_board[row, col] == 0 ? "_".PadLeft(5) : _board[row, col].Value.ToString().PadLeft(5));
-                Console.WriteLine("\r\n");
+                for (var col = 0; col < board.GetLength(1); col++)
+                    Console.Write(board[row, col] == 0 ? ".".PadLeft(5) : board[row, col].Value.ToString().PadLeft(5));
+                Console.WriteLine("\r\n");        
             }
+            Console.WriteLine("  " + "".PadLeft(5 * Size, '-') + "\r\n");
+            Console.Write("  Score: ");
         }
 
         public bool HasEmptyCells()
         {
-            for (var row = 0; row < _board.GetLength(0); row++)
-                for (var col = 0; col < _board.GetLength(1); col++)
-                    if (_board[row, col] == 0) return true;
+            for (var row = 0; row < board.GetLength(0); row++)
+                for (var col = 0; col < board.GetLength(1); col++)
+                    if (board[row, col] == 0) return true;
             return false;
+        }
+
+        public static bool Equals(Board x, Board y)
+        {
+            if (x.Size != y.Size)
+                return false;
+
+            for (var row = 0; row < x.Size; row++)
+                for (var col = 0; col < x.Size; col++)
+                    if (x[row, col] != y[row, col])
+                        return false;
+            return true;
+        }
+
+        public bool Equals(Board other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Equals(board, other.board);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals((Board) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return board?.GetHashCode() ?? 0;
+        }
+
+        public static bool operator ==(Board x, Board y)
+        {
+            return Equals(x, y);
+        }
+
+        public static bool operator !=(Board x, Board y)
+        {
+            return !Equals(x, y);
         }
     }
 }
