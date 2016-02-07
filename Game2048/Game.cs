@@ -18,10 +18,10 @@ namespace Game2048
             //TEST CASE #1
             //var arr = new[,]
             //{
-            //    {new Tile(2), new Tile(0), new Tile(0), new Tile(2)},
+            //    {new Tile(0), new Tile(2), new Tile(4), new Tile(8)},
+            //    {new Tile(0), new Tile(0), new Tile(0), new Tile(4)},
             //    {new Tile(0), new Tile(0), new Tile(0), new Tile(2)},
-            //    {new Tile(0), new Tile(0), new Tile(0), new Tile(2)},
-            //    {new Tile(0), new Tile(0), new Tile(0), new Tile(2)},
+            //    {new Tile(0), new Tile(0), new Tile(0), new Tile(0)},
             //};
             //currentTurnBoard = new Board(arr);
 
@@ -180,7 +180,7 @@ namespace Game2048
             for (var row = 0; row < currentTurnBoard.Size; row++)
             {
                 var tilesList = new List<Tile>();
-                for (var col = 0; col < currentTurnBoard.Size; col++)
+                for (var col = currentTurnBoard.Size - 1; col >= 0; col--)
                     tilesList.Add(currentTurnBoard[row, col]);
 
                 ShiftTiles(tilesList);
